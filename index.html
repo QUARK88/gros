@@ -18,90 +18,98 @@
     </div>
 
     <script>
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
-        let images = [];
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+let images = [];
 
-        fetch('images.json')
-            .then(response => response.json())
-            .then(filenames => {
-                let loaded = 0;
-                filenames.forEach((filename, index) => {
-                    const img = new Image();
-                    img.src = `assets/${filename}`;
-                    img.onload = () => {
-                        images.push({ img, name: filename, cells: img.width === 2126 ? 12 : 8, selected: [] });
-                        loaded++;
-                        if (loaded === filenames.length) render();
-                    };
-                });
-            })
-            .catch(error => console.error('Error loading images:', error));
-
-        function render() {
-            if (images.length === 0) return;
-            let totalHeight = images.length * 236;
-            canvas.width = 2126;
-            canvas.height = totalHeight;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            let yOffset = 0;
-                ctx.fillStyle = "black";
-                ctx.fillRect(0, 0, 2126, totalHeight)
-            images.forEach((imageData, index) => {
-                let xOffset = imageData.cells === 8 ? (2126 - 1417) / 2 : 0;
-                ctx.drawImage(imageData.img, xOffset, yOffset);
-                
-                ctx.fillStyle = "white";
-                ctx.font = "20px Arial";
-                ctx.fillText(imageData.name.replace(" Axis.png",""), 10, yOffset + 20);
-                
-                let cellWidth = imageData.img.width / imageData.cells;
-                for (let i = 0; i < imageData.cells; i++) {
-                    if (imageData.selected.includes(i)) {
-                        ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-                        ctx.fillRect(xOffset + i * cellWidth, yOffset, cellWidth, 236);
-                    }
-                }
-                yOffset += 236;
-            });
-        }
-
-        canvas.addEventListener("click", handleClick);
-
-        function handleClick(event) {
-            const rect = canvas.getBoundingClientRect();
-            const x = event.clientX - rect.left;
-            const y = event.clientY - rect.top;
-            
-            let yOffset = 0;
-            for (let i = 0; i < images.length; i++) {
-                let imgData = images[i];
-                let xOffset = imgData.cells === 8 ? (2126 - 1417) / 2 : 0;
-                if (y >= yOffset && y < yOffset + 236) {
-                    let cellWidth = imgData.img.width / imgData.cells;
-                    let cellIndex = Math.floor((x - xOffset) / cellWidth);
-                    if (cellIndex >= 0 && cellIndex < imgData.cells) {
-                        let selectedIndex = imgData.selected.indexOf(cellIndex);
-                        if (selectedIndex === -1) {
-                            imgData.selected.push(cellIndex);
-                        } else {
-                            imgData.selected.splice(selectedIndex, 1);
-                        }
+fetch('images.json')
+    .then(response => response.json())
+    .then(filenames => {
+        let index = 0;
+        function loadNextImage() {
+            if (index < filenames.length) {
+                const filename = filenames[index];
+                const img = new Image();
+                img.src = `assets/${filename}`;
+                img.onload = () => {
+                    images.push({ img, name: filename, cells: img.width === 2126 ? 12 : 8, selected: [] });
+                    index++;
+                    if (index === filenames.length) {
                         render();
-                        return;
+                    } else {
+                        loadNextImage();
                     }
-                }
-                yOffset += 236;
+                };
             }
         }
+        loadNextImage();
+    })
+    .catch(error => console.error('Error loading images:', error));
 
-        function exportCanvas() {
-            const link = document.createElement("a");
-            link.download = "exported_canvas.png";
-            link.href = canvas.toDataURL("image/png");
-            link.click();
+function render() {
+    if (images.length === 0) return;
+    let totalHeight = images.length * 236;
+    canvas.width = 2126;
+    canvas.height = totalHeight;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    let yOffset = 0;
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, 2126, totalHeight);
+    images.forEach((imageData, index) => {
+        let xOffset = imageData.cells === 8 ? (2126 - 1417) / 2 : 0;
+        ctx.drawImage(imageData.img, xOffset, yOffset);
+        
+        ctx.fillStyle = "white";
+        ctx.font = "20px Arial";
+        ctx.fillText(imageData.name.replace(" Axis.png",""), 10, yOffset + 20);
+        
+        let cellWidth = imageData.img.width / imageData.cells;
+        for (let i = 0; i < imageData.cells; i++) {
+            if (imageData.selected.includes(i)) {
+                ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+                ctx.fillRect(xOffset + i * cellWidth, yOffset, cellWidth, 236);
+            }
         }
+        yOffset += 236;
+    });
+}
+
+canvas.addEventListener("click", handleClick);
+
+function handleClick(event) {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    
+    let yOffset = 0;
+    for (let i = 0; i < images.length; i++) {
+        let imgData = images[i];
+        let xOffset = imgData.cells === 8 ? (2126 - 1417) / 2 : 0;
+        if (y >= yOffset && y < yOffset + 236) {
+            let cellWidth = imgData.img.width / imgData.cells;
+            let cellIndex = Math.floor((x - xOffset) / cellWidth);
+            if (cellIndex >= 0 && cellIndex < imgData.cells) {
+                let selectedIndex = imgData.selected.indexOf(cellIndex);
+                if (selectedIndex === -1) {
+                    imgData.selected.push(cellIndex);
+                } else {
+                    imgData.selected.splice(selectedIndex, 1);
+                }
+                render();
+                return;
+            }
+        }
+        yOffset += 236;
+    }
+}
+
+function exportCanvas() {
+    const link = document.createElement("a");
+    link.download = "exported_canvas.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+}
     </script>
 </body>
 </html>
